@@ -26,7 +26,11 @@ This study demonstrated that commercial wearable devices, Apple Watch and Fitbit
 
 1. For converting indirect calorimetry data from breath-by-breath data to second-by-second: [https://github.com/walkabillylab/jaeger_analysis](https://github.com/walkabillylab/jaeger_analysis)
 
-2. For modeling decision tree, random forest, and support vector machine analyses: [https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/Models_SVM_RF_DT.Rmd](https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/Models_SVM_RF_DT.Rmd)
+2. For modeling decision tree, random forest, and support vector machine analyses: [https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/models_inputation_testing.Rmd](https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/models_inputation_testing.Rmd)
+
+see the md file with more readable output here: 
+
+[https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/models_inputation_testing.md](https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/models_inputation_testing.md)
 
 3. Rotation Forest in Weka for Fitbit data: [https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/Fitbit_RotationForestModel.model](https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/Fitbit_RotationForestModel.model)
 
