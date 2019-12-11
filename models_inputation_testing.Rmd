@@ -3,9 +3,8 @@ title: "Classification"
 author: "Arastoo Bozorgi"
 date: "07/06/2019"
 output:
-  word_document: default
-  pdf_document: default
-  html_document: default
+      html_document:
+        keep_md: true
 ---
 
 ```{r setup, include=FALSE}
@@ -47,7 +46,6 @@ setwd(path)
 ### Reading the generated data
 ```{r warning=FALSE}
 aggregated_data <- fread(paste0(path, "aggregated_fitbit_applewatch_jaeger.csv"), data.table = F)[ ,-1]
-  
 ```
 
 ### Descriptive statistics
@@ -154,17 +152,6 @@ paper_stats <- aggregated_data %>%
 paper_stats <- round(paper_stats, 1)
 
 write.csv(paper_stats, "descriptive_stats.csv")  
-
-ggplot(aggregated_data, aes(x = DateTime, y = Fitbit.Heart)) + 
-  geom_point() + 
-  facet_wrap(~ id)
-
-ggplot(aggregated_data, aes(Fitbit.Steps)) + 
-  geom_histogram()
-
-ggplot(aggregated_data, aes(Applewatch.Steps_LE)) + 
-  geom_histogram()
-
 ```
 
 
@@ -719,7 +706,7 @@ write.csv(x, "data_for_weka_fb.csv")
 ```
 
 
-##### Fitbit with non-interpolated data, removing Nas with rfImpute - Random Forest and SVM
+##### Fitbit with interpolated data, removing Nas with rfImpute - Random Forest and SVM
 ```{r}
 x_columns_FB <- c(
   "age",
@@ -744,22 +731,22 @@ x_columns_FB <- c(
 summary_data_before_removing_na <- aggregated_data %>% 
   summarise(
     total_row_num = dim(aggregated_data)[1],
-    n_Fitbit.Steps_LE = length(which(!is.na(Fitbit.Steps_LE))),
-    n_Fitbit.Heart_LE = length(which(!is.na(Fitbit.Heart_LE))),
-    n_Fitbit.Calories_LE = length(which(!is.na(Fitbit.Calories_LE))),
-    n_FFitbit.Distance_LE = length(which(!is.na(Fitbit.Distance_LE))),
-    n_EntropyFitbitHeartPerDay_LE = length(which(!is.na(EntropyFitbitHeartPerDay_LE))),
-    n_EntropyFitbitStepsPerDay_LE = length(which(!is.na(EntropyFitbitStepsPerDay_LE))),
-    n_RestingFitbitHeartrate_LE = length(which(!is.na(RestingFitbitHeartrate_LE))),
-    n_CorrelationFitbitHeartrateSteps_LE = length(which(!is.na(CorrelationFitbitHeartrateSteps_LE))),
-    n_NormalizedFitbitHeartrate_LE = length(which(!is.na(NormalizedFitbitHeartrate_LE))),
-    n_FitbitIntensity_LE = length(which(!is.na(FitbitIntensity_LE))),
-    n_SDNormalizedFitbitHR_LE = length(which(!is.na(SDNormalizedFitbitHR_LE))),
-    n_FitbitStepsXDistance_LE = length(which(!is.na(FitbitStepsXDistance_LE)))
+    n_Fitbit.Steps = length(which(!is.na(Fitbit.Steps))),
+    n_Fitbit.Heart = length(which(!is.na(Fitbit.Heart))),
+    n_Fitbit.Calories = length(which(!is.na(Fitbit.Calories))),
+    n_FFitbit.Distance = length(which(!is.na(Fitbit.Distance))),
+    n_EntropyFitbitHeartPerDay = length(which(!is.na(EntropyFitbitHeartPerDay))),
+    n_EntropyFitbitStepsPerDay = length(which(!is.na(EntropyFitbitStepsPerDay))),
+    n_RestingFitbitHeartrate = length(which(!is.na(RestingFitbitHeartrate))),
+    n_CorrelationFitbitHeartrateSteps = length(which(!is.na(CorrelationFitbitHeartrateSteps))),
+    n_NormalizedFitbitHeartrate = length(which(!is.na(NormalizedFitbitHeartrate))),
+    n_FitbitIntensity = length(which(!is.na(FitbitIntensity))),
+    n_SDNormalizedFitbitHR = length(which(!is.na(SDNormalizedFitbitHR))),
+    n_FitbitStepsXDistance = length(which(!is.na(FitbitStepsXDistance)))
   )
 
-x <- aggregated_data %>% select(x_columns_FB)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
+aggregated_data_impute <- aggregated_data %>% select(x_columns_FB)
+aggregated_data_impute$gender <- ifelse(aggregated_data_impute$gender == "Male", 1, 0)
 
 
 #idx <- which(is.na(x), arr.ind = T)[, 1]
@@ -767,35 +754,33 @@ x$gender <- ifelse(x$gender == "Male", 1, 0)
 
 # write.csv(x, "data_for_process_fb.csv")
 
-x$activity_trimmed <- as.factor(x$activity_trimmed)
+aggregated_data_impute$activity_trimmed <- as_factor(aggregated_data_impute$activity_trimmed)
 # removing Nas from the dataset
-x <- rfImpute(activity_trimmed ~ ., x)
-# remove the activity_trimmed column
-x <- x[-1]
+aggregated_data_impute <- as.data.frame(aggregated_data_impute)
+aggregated_data_imputed <- rfImpute(activity_trimmed ~ ., aggregated_data_impute)
 
-
-
-
-summary_data_after_removing_na <- x %>% 
+summary_data_after_removing_na <- aggregated_data_imputed %>% 
   summarise(
-    total_row_num = dim(x)[1],
-    n_Fitbit.Steps_LE = length(which(!is.na(Fitbit.Steps_LE))),
-    n_Fitbit.Heart_LE = length(which(!is.na(Fitbit.Heart_LE))),
-    n_Fitbit.Calories_LE = length(which(!is.na(Fitbit.Calories_LE))),
-    n_FFitbit.Distance_LE = length(which(!is.na(Fitbit.Distance_LE))),
-    n_EntropyFitbitHeartPerDay_LE = length(which(!is.na(EntropyFitbitHeartPerDay_LE))),
-    n_EntropyFitbitStepsPerDay_LE = length(which(!is.na(EntropyFitbitStepsPerDay_LE))),
-    n_RestingFitbitHeartrate_LE = length(which(!is.na(RestingFitbitHeartrate_LE))),
-    n_CorrelationFitbitHeartrateSteps_LE = length(which(!is.na(CorrelationFitbitHeartrateSteps_LE))),
-    n_NormalizedFitbitHeartrate_LE = length(which(!is.na(NormalizedFitbitHeartrate_LE))),
-    n_FitbitIntensity_LE = length(which(!is.na(FitbitIntensity_LE))),
-    n_SDNormalizedFitbitHR_LE = length(which(!is.na(SDNormalizedFitbitHR_LE))),
-    n_FitbitStepsXDistance_LE = length(which(!is.na(FitbitStepsXDistance_LE)))
+    total_row_num = dim(aggregated_data_imputed)[1],
+    n_Fitbit.Steps_LE = length(which(!is.na(Fitbit.Steps))),
+    n_Fitbit.Heart_LE = length(which(!is.na(Fitbit.Heart))),
+    n_Fitbit.Calories_LE = length(which(!is.na(Fitbit.Calories))),
+    n_FFitbit.Distance_LE = length(which(!is.na(Fitbit.Distance))),
+    n_EntropyFitbitHeartPerDay_LE = length(which(!is.na(EntropyFitbitHeartPerDay))),
+    n_EntropyFitbitStepsPerDay_LE = length(which(!is.na(EntropyFitbitStepsPerDay))),
+    n_RestingFitbitHeartrate_LE = length(which(!is.na(RestingFitbitHeartrate))),
+    n_CorrelationFitbitHeartrateSteps_LE = length(which(!is.na(CorrelationFitbitHeartrateSteps))),
+    n_NormalizedFitbitHeartrate_LE = length(which(!is.na(NormalizedFitbitHeartrate))),
+    n_FitbitIntensity_LE = length(which(!is.na(FitbitIntensity))),
+    n_SDNormalizedFitbitHR_LE = length(which(!is.na(SDNormalizedFitbitHR))),
+    n_FitbitStepsXDistance_LE = length(which(!is.na(FitbitStepsXDistance)))
   )
 
 
 #y <- as.factor(aggregated_data$activity_trimmed[-idx])
-y <- as.factor(aggregated_data$activity_trimmed)
+y <- as.factor(aggregated_data_imputed$activity_trimmed)
+x <- select(aggregated_data_imputed,-c(1))
+
 
 train = sample(seq(length(y)), 0.7 * length(y))
 test = seq(length(y))[-train]
@@ -838,7 +823,7 @@ print(
   print(confusionMatrix(pred, yTest))
 ```
 
-##### Applewatch with non-interpolated data, imputed - Random Forest and SVM
+##### Applewatch with interpolated data, imputed - Random Forest and SVM
 ```{r}
 x_columns_AW <- c(
   "age",
@@ -864,7 +849,7 @@ x$gender <- ifelse(x$gender == "Male", 1, 0)
 x <- impute(x = x, what = "mean")
 
 
-y <- as.factor(aggregated_data$activity_trimmed)
+y <- as.factor(aggregated_data_imputed$activity_trimmed)
 
 train = sample(seq(length(y)), 0.7 * length(y))
 test = seq(length(y))[-train]
@@ -1124,79 +1109,4 @@ print(
   pred <- predict(svmModel, xTest)
   print(confusionMatrix(pred, yTest))
 ```
-
-#### Applewatch with interpolated data - Rotation Forest
-##### Stratified cross-validation
-| Description  | Value |               |
-| ------------- | ------------- |---------------|
-| Correctly Classified Instances  | 2012  | 76.531  % |
-| Incorrectly Classified Instances  | 617  | 23.469  % |
-|Kappa statistic | 0.723 |   |
-|Mean absolute error | 0.104 |   |
-|Root mean squared error | 0.2182 |  |
-|Relative absolute error | 42.8357 % |  |
-|Root relative squared error | 62.6229 % |  |
-|Total Number of Instances | 2629 |  |     
-
-##### Detailed Accuracy By Class
-| X | TP Rate | FP Rate | Precision | Recall | F-Measure | MCC | ROC Area | PRC Area | Class |
-|--|---------|---------|-----------|--------|-----------|-----|----------|----------|-------|
-|  |0.822    |0.061    |0.770      |0.822   |0.795      |0.742|    0.961 |    0.890 | Lying |
-|  |0.862    |0.042    |0.787      |0.862   |0.823      |0.790|    0.975 |    0.899 | Running 5 METs|
-|  |0.254    |0.052    |0.373      |0.254   |0.302      |0.240|    0.739 |    0.352 | transit|
-|  |0.695    |0.045    |0.699      |0.695   |0.697      |0.652|    0.938 |    0.746 | Sitting|
-|  |0.904    |0.025    |0.888      |0.904   |0.896      |0.873|    0.986 |    0.961 | Running 7 METs|
-|  |0.815    |0.029    |0.798      |0.815   |0.806      |0.779|    0.982 |    0.887 | Running 3 METs|
-|  |0.834    |0.022    |0.823      |0.834   |0.828      |0.807|    0.974 |    0.901 | Self Pace walk|
-|Weighted Avg.|    0.765 |    0.040 |    0.751 |      0.765 |    0.756 |      0.719 |    0.944 |     0.828 | |
-
-##### Confusion Matrix
-| Lying | Running 5 METs | transit | Sitting | Running 7 METs | Running 3 METs | Self Pace walk |
-|-------|----------------|---------|---------|----------------|----------------|----------------|
-| 433|   5 |  32 |  19 |   1 |  18 |  19 |
-| 3 | 343 |  14 |  12 |  13 |  11 |   2 |
-| 66 |  28 |  72 |  51 |  30 |  24 |  13 |
-| 28  | 24 |  31 | 237 |   9 |   7 |   5 |
-| 1 |  19 |  18 |   6 | 426 |   1 |   0 |
-| 18  |  9 |  16 |   3 |   0 | 260 |  13 |
-| 13   | 8 |  10 |  11 |   1 |   5 | 241 |
-
-#### Fitbit with interpolated data - Rotation Forest
-##### Stratified cross-validation
-| Description  | Value |               |
-| ------------- | ------------- |---------------|
-| Correctly Classified Instances  | 293  | 76.1039 % |
-| Incorrectly Classified Instances  | 92  | 23.8961 % |
-|Kappa statistic | 0.7085 |   |
-|Mean absolute error | 0.1057 |   |
-|Root mean squared error | 0.2215 |  |
-|Relative absolute error | 44.8496 % |  |
-|Root relative squared error | 64.5576 % |  |
-|Total Number of Instances | 385 |  |     
-
-##### Detailed Accuracy By Class
-| X | TP Rate | FP Rate | Precision | Recall | F-Measure | MCC | ROC Area | PRC Area | Class |
-|--|---------|---------|-----------|--------|-----------|-----|----------|----------|-------|
-|  |0.835    |0.061    |0.809      |0.835   |0.822      |0.765|    0.953 |    0.909 | Lying |
-|  |0.587    |0.065    |0.551      |0.587   |0.568      |0.508|    0.911 |    0.535 | Running 5 METs|
-|  |0.171    |0.037    |0.316      |0.171   |0.222      |0.178|    0.737 |    0.263 | transit|
-|  |0.861    |0.017    |0.838      |0.861   |0.849      |0.834|    0.986 |    0.912 | Sitting|
-|  |0.690    |0.028    |0.667      |0.690   |0.678      |0.651|    0.929 |    0.785 | Running 7 METs|
-|  |0.729    |0.042    |0.714      |0.729   |0.722      |0.682|    0.939 |    0.784 | Running 3 METs|
-|  |0.980    |0.032    |0.916      |0.980   |0.947      |0.928|    0.994 |    0.987 | Self Pace walk|
-|Weighted Avg.|    0.761 |    0.043 |    0.741 |      0.761 |    0.749 |      0.711 |    0.939 |     0.801 | |
-
-##### Confusion Matrix
-| Lying | Running 5 METs | transit | Sitting | Running 7 METs | Running 3 METs | Self Pace walk |
-|-------|----------------|---------|---------|----------------|----------------|----------------|
-| 76|   5 |  4 |  1 |   2 |  0 |  3 |
-| 7 | 27 |  3 |  2 |  0 |  5 |   2 |
-| 8 |  9 |  6 |  1 |  4 |  5 |  2 |
-| 0  | 0 |  3 | 31 |   1 |   1 |   0 |
-| 2 |  0 |  1 |   2 | 20 |   3 |   1 |
-| 1  |  7 |  1 |   0 |   3 | 35 |  1 |
-| 0   | 1 |  1 |  0 |   0 |   0 | 98 |
-
-
-
 
