@@ -1,6 +1,6 @@
 ---
-title: "Classification"
-author: "Arastoo Bozorgi"
+title: "Using machine learning methods to predict physical activity types with Apple Watch and Fitbit data using indirect calorimetry as the criterion."
+author: "Arastoo Bozorgi and Daniel Fuller"
 date: "07/06/2019"
 output:
       html_document:
@@ -11,9 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Apply SVM classification to predict the labels in the smart_phone accel study
-
-### Loading the required libraries
+## Loading the required libraries
 ```{r warning=FALSE}
 library("data.table")
 library("dplyr")
@@ -25,27 +23,13 @@ library("rpart.plot")
 library("mlbench")
 library("randomForest")
 library("stats")
-library("RWeka")
+#library("RWeka")
 ```
 
+## Reading the data
 
-
-### Get the os type
 ```{r warning=FALSE}
-OS <- Sys.info()
-if (OS["sysname"] == "Windows") {
-  path <-
-    "Z:/Research/dfuller/Walkabilly/studies/smarphone_accel/data/"
-} else {
-  path <-
-    "/Volumes/hkr-storage/Research/dfuller/Walkabilly/studies/smarphone_accel/data/"
-}
-setwd(path)
-```
-
-### Reading the generated data
-```{r warning=FALSE}
-aggregated_data <- fread(paste0(path, "aggregated_fitbit_applewatch_jaeger.csv"), data.table = F)[ ,-1]
+aggregated_data <- read_csv("aggregated_fitbit_applewatch_jaeger.csv")
 ```
 
 ### Descriptive statistics
@@ -154,53 +138,12 @@ paper_stats <- round(paper_stats, 1)
 write.csv(paper_stats, "descriptive_stats.csv")  
 ```
 
+# Apple Watch Data
 
-### Applying the SVM on the data
+## Interpolated Results (Included in the paper)
 
-##### Applewatch with non-interpolated data - Decision tree
-```{r}
-x_columns_AW <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Applewatch.Steps",
-  "Applewatch.Heart",
-  "Applewatch.Calories",
-  "Applewatch.Distance",
-  "EntropyApplewatchHeartPerDay",
-  "EntropyApplewatchStepsPerDay",
-  "RestingApplewatchHeartrate",
-  "CorrelationApplewatchHeartrateSteps",
-  "NormalizedApplewatchHeartrate",
-  "ApplewatchIntensity",
-  "SDNormalizedApplewatchHR",
-  "ApplewatchStepsXDistance",
-  "activity_trimmed"
-)
+### Decision Tree (Apple Watch)
 
-x <- aggregated_data %>% select(x_columns_AW)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-
-y <- aggregated_data$activity_trimmed
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-train = x[train,]
-train$activity_trimmed <- as.factor(train$activity_trimmed)
-
-test = x[test,]
-test$activity_trimmed <- as.factor(test$activity_trimmed)
-
-
-dtModel <- rpart(activity_trimmed ~ ., train)
-predict_unseen_aw <- predict(dtModel, test, type = 'class')
-
-print(confusionMatrix(predict_unseen_aw, test$activity_trimmed))
-```
-
-##### Applewatch with interpolated data - Decision tree
 ```{r}
 x_columns_AW_LE <- c(
   "age",
@@ -223,6 +166,7 @@ x_columns_AW_LE <- c(
 )
 
 x <- aggregated_data %>% select(x_columns_AW_LE)
+
 write.csv(x, "aw_data_le_21_08_2019.csv", na = "")
 x$gender <- ifelse(x$gender == "Male", 1, 0)
 
@@ -244,145 +188,14 @@ test$activity_trimmed <- as.factor(test$activity_trimmed)
 
 
 dtModel <- rpart(activity_trimmed ~ ., train)
+
 predict_unseen_aw_le <- predict(dtModel, test, type = 'class')
 
-print(confusionMatrix(predict_unseen_aw_le, test$activity_trimmed))
+confusionMatrix(predict_unseen_aw_le, test$activity_trimmed)
 ```
 
-##### Fitbit with non-interpolated data - Decision tree
-```{r}
-x_columns_FB <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Fitbit.Steps",
-  "Fitbit.Heart",
-  "Fitbit.Calories",
-  "Fitbit.Distance",
-  "EntropyFitbitHeartPerDay",
-  "EntropyFitbitStepsPerDay",
-  "RestingFitbitHeartrate",
-  "CorrelationFitbitHeartrateSteps",
-  "NormalizedFitbitHeartrate",
-  "FitbitIntensity",
-  "SDNormalizedFitbitHR",
-  "FitbitStepsXDistance",
-  "activity_trimmed"
-)
+### Random Forest
 
-x <- aggregated_data %>% select(x_columns_FB)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-
-y <- aggregated_data$activity_trimmed
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-train = x[train,]
-train$activity_trimmed <- as.factor(train$activity_trimmed)
-
-test = x[test,]
-test$activity_trimmed <- as.factor(test$activity_trimmed)
-
-
-dtModel <- rpart(activity_trimmed ~ ., train)
-predict_unseen_fb <- predict(dtModel, test, type = 'class')
-
-print(confusionMatrix(predict_unseen_fb, test$activity_trimmed))
-  
-```
-
-##### Fitbit with interpolated data - Decision tree
-```{r}
-x_columns_FB_LE <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-#  "Fitbit.Steps_LE",
-  "Fitbit.Heart_LE",
-  "Fitbit.Calories_LE",
-  "Fitbit.Distance_LE",
-  "EntropyFitbitHeartPerDay_LE",
-  "EntropyFitbitStepsPerDay_LE",
-  "RestingFitbitHeartrate_LE",
-  "CorrelationFitbitHeartrateSteps_LE",
-  "NormalizedFitbitHeartrate_LE",
-  "FitbitIntensity_LE",
-  "SDNormalizedFitbitHR_LE",
-  "FitbitStepsXDistance_LE",
-  "activity_trimmed"
-)
-
-x <- aggregated_data %>% select(x_columns_FB_LE)
-write_csv(x, "fb_data_le_21_08_2019.csv", na = "")
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-
-y <- aggregated_data$activity_trimmed
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-train = x[train,]
-train$activity_trimmed <- as.factor(train$activity_trimmed)
-
-test = x[test,]
-test$activity_trimmed <- as.factor(test$activity_trimmed)
-
-
-dtModel <- rpart(activity_trimmed ~ ., train)
-predict_unseen_fb_le <- predict(dtModel, test, type = 'class')
-
-print(confusionMatrix(predict_unseen_fb_le, test$activity_trimmed))
-  
-```
-
-##### Applewatch with non-interpolated data with EE - regression
-```{r}
-x_columns_AW <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Applewatch.Steps",
-  "Applewatch.Heart",
-  "Applewatch.Calories",
-  "Applewatch.Distance",
-  "EntropyApplewatchHeartPerDay",
-  "EntropyApplewatchStepsPerDay",
-  "RestingApplewatchHeartrate",
-  "CorrelationApplewatchHeartrateSteps",
-  "NormalizedApplewatchHeartrate",
-  "ApplewatchIntensity",
-  "SDNormalizedApplewatchHR",
-  "ApplewatchStepsXDistance",
-  "EE",
-  "activity_trimmed"
-)
-
-x <- aggregated_data %>% select(x_columns_AW)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-
-y <- aggregated_data$activity_trimmed
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-train = x[train,]
-train$activity_trimmed <- as.factor(train$activity_trimmed)
-
-test = x[test,]
-test$activity_trimmed <- as.factor(test$activity_trimmed)
-
-
-dtModel <- rpart(activity_trimmed ~ ., train, method = 'anova')
-printcp(dtModel) # display the results 
-plotcp(dtModel) # visualize cross-validation results 
-summary(dtModel) # detailed summary of splits
-```
-
-##### Applewatch with interpolated data - Random Forest and SVM
 ```{r}
 x_columns_AW_LE <- c(
   "age",
@@ -410,9 +223,6 @@ x$gender <- ifelse(x$gender == "Male", 1, 0)
 idx <- which(is.na(x), arr.ind = T)[, 1]
 x <- x[-idx, ]
 
-
-# write.csv(x, "data_for_weka_aw.csv")
-
 y <- as.factor(aggregated_data$activity_trimmed[-idx])
 
 train = sample(seq(length(y)), 0.7 * length(y))
@@ -423,115 +233,33 @@ yTrain = y[train]
 xTest = x[test, ]
 yTest = y[test]
 
+rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 100)
 
-print(
-    "--------------------------------------------Random Forest--------------------------------------------"
-  )
+### Training 
+print(confusionMatrix(rfModel[["predicted"]], yTrain))
 
-  rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 500)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(rfModel[["predicted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(rfModel, xTest)
-  print(confusionMatrix(pred, yTest))
-  
-  
-  print(
-    "------------------------------------------------SVM--------------------------------------------------"
-  )
-  svmModel <- svm(xTrain, yTrain)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(svmModel[["fitted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(svmModel, xTest)
-  print(confusionMatrix(pred, yTest))
+### Testing 
+pred <- predict(rfModel, xTest)
+print(confusionMatrix(pred, yTest))
+```  
+ 
+### SVM (Apple Watch)
+```{r}
+svmModel <- svm(xTrain, yTrain)
+
+### Training
+print(confusionMatrix(svmModel[["fitted"]], yTrain))
+
+### Testing
+pred <- predict(svmModel, xTest)
+print(confusionMatrix(pred, yTest))
 ```
 
+### Rotation Forest (Apple Watch)
 
-##### Fitbit with interpolated data - Random Forest and SVM
-```{r}
-x_columns_FB_LE <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Fitbit.Steps_LE",
-  "Fitbit.Heart_LE",
-  "Fitbit.Calories_LE",
-  "Fitbit.Distance_LE",
-  "EntropyFitbitHeartPerDay_LE",
-  "EntropyFitbitStepsPerDay_LE",
-  "RestingFitbitHeartrate_LE",
-  "CorrelationFitbitHeartrateSteps_LE",
-  "NormalizedFitbitHeartrate_LE",
-  "FitbitIntensity_LE",
-  "SDNormalizedFitbitHR_LE",
-  "FitbitStepsXDistance_LE"
-#  ,"activity_trimmed"
-)
+Rotation Forest models were run in Weka and are available in the Github Repo. This code will only run if you have Weka [https://www.cs.waikato.ac.nz/ml/weka/](https://www.cs.waikato.ac.nz/ml/weka/) installed on your system.
 
-x <- aggregated_data %>% select(x_columns_FB_LE)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-
-
-idx <- which(is.na(x), arr.ind = T)[, 1]
-x <- x[-idx, ]
-
-# write.csv(x, "data_for_weka_fb.csv")
-
-
-y <- as.factor(aggregated_data$activity_trimmed[-idx])
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-xTrain = x[train, ]
-yTrain = y[train]
-xTest = x[test, ]
-yTest = y[test]
-
-
-print(
-    "--------------------------------------------Random Forest--------------------------------------------"
-  )
-  rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 500)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(rfModel[["predicted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(rfModel, xTest)
-  print(confusionMatrix(pred, yTest))
-
-  
-  print(
-    "------------------------------------------------SVM--------------------------------------------------"
-  )
-  svmModel <- svm(xTrain, yTrain)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(svmModel[["fitted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(svmModel, xTest)
-  print(confusionMatrix(pred, yTest))
-```
-
-
-#### AppleWatch with interpolated data - Rotation Forest
-```{r}
+```{r, eval=FALSE}
 x_columns_AW_LE <- c(
   "age",
   "gender",
@@ -587,8 +315,125 @@ print(confusionMatrix(rotationForestPredict, test$activity_trimmed))
 ```
 
 
-#### Fitbit with interpolated data - Rotation Forest
+# FitBit Data
+
+## Interpolated Results (Included in the paper)
+
+### Decision Tree (Fitbit)
 ```{r}
+x_columns_FB_LE <- c(
+  "age",
+  "gender",
+  "height",
+  "weight",
+  "Fitbit.Steps_LE",
+  "Fitbit.Heart_LE",
+  "Fitbit.Calories_LE",
+  "Fitbit.Distance_LE",
+  "EntropyFitbitHeartPerDay_LE",
+  "EntropyFitbitStepsPerDay_LE",
+  "RestingFitbitHeartrate_LE",
+  "CorrelationFitbitHeartrateSteps_LE",
+  "NormalizedFitbitHeartrate_LE",
+  "FitbitIntensity_LE",
+  "SDNormalizedFitbitHR_LE",
+  "FitbitStepsXDistance_LE",
+  "activity_trimmed"
+)
+
+x <- aggregated_data %>% select(x_columns_FB_LE)
+write_csv(x, "fb_data_le_21_08_2019.csv", na = "")
+x$gender <- ifelse(x$gender == "Male", 1, 0)
+
+y <- aggregated_data$activity_trimmed
+
+train = sample(seq(length(y)), 0.7 * length(y))
+test = seq(length(y))[-train]
+
+train = x[train,]
+train$activity_trimmed <- as.factor(train$activity_trimmed)
+
+test = x[test,]
+test$activity_trimmed <- as.factor(test$activity_trimmed)
+
+
+dtModel <- rpart(activity_trimmed ~ ., train)
+predict_unseen_fb_le <- predict(dtModel, test, type = 'class')
+
+print(confusionMatrix(predict_unseen_fb_le, test$activity_trimmed))
+```
+
+### Random Forest (Fitbit)
+
+```{r}
+x_columns_FB_LE <- c(
+  "age",
+  "gender",
+  "height",
+  "weight",
+  "Fitbit.Steps_LE",
+  "Fitbit.Heart_LE",
+  "Fitbit.Calories_LE",
+  "Fitbit.Distance_LE",
+  "EntropyFitbitHeartPerDay_LE",
+  "EntropyFitbitStepsPerDay_LE",
+  "RestingFitbitHeartrate_LE",
+  "CorrelationFitbitHeartrateSteps_LE",
+  "NormalizedFitbitHeartrate_LE",
+  "FitbitIntensity_LE",
+  "SDNormalizedFitbitHR_LE",
+  "FitbitStepsXDistance_LE"
+#  ,"activity_trimmed"
+)
+
+x <- aggregated_data %>% select(x_columns_FB_LE)
+x$gender <- ifelse(x$gender == "Male", 1, 0)
+
+
+idx <- which(is.na(x), arr.ind = T)[, 1]
+x <- x[-idx, ]
+
+# write.csv(x, "data_for_weka_fb.csv")
+
+
+y <- as.factor(aggregated_data$activity_trimmed[-idx])
+
+train = sample(seq(length(y)), 0.7 * length(y))
+test = seq(length(y))[-train]
+
+xTrain = x[train, ]
+yTrain = y[train]
+xTest = x[test, ]
+yTest = y[test]
+
+rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 100)
+
+### Training
+print(confusionMatrix(rfModel[["predicted"]], yTrain))
+
+### Testing
+pred <- predict(rfModel, xTest)
+print(confusionMatrix(pred, yTest))
+```
+
+  
+### SVM (Fitbit)
+```{r}
+svmModel <- svm(xTrain, yTrain)
+  
+### Training
+print(confusionMatrix(svmModel[["fitted"]], yTrain))
+
+### Testing
+pred <- predict(svmModel, xTest)
+print(confusionMatrix(pred, yTest))
+```
+
+### Rotation Forest (Fitbit)
+
+Rotation Forest models were run in Weka and are available in the Github Repo. This code will only run if you have Weka [https://www.cs.waikato.ac.nz/ml/weka/](https://www.cs.waikato.ac.nz/ml/weka/) installed on your system.
+
+```{r, eval=FALSE}
 x_columns_FB_LE <- c(
   "age",
   "gender",
@@ -644,8 +489,81 @@ print(confusionMatrix(rotationForestPredict, test$activity_trimmed))
 ```
 
 
+# Including device type as a feature
 
-#### Generating AppleWatch and Fitbit data for Rotation Forest model in Weka
+## Device name (Fitbit or Apple Watch) as a feature  
+
+### Random Forest
+```{r}
+aggregated_data_appended <- read_csv("aggregated_fitbit_applewatch_jaeger_appended.csv")
+
+x_columns_FB_LE <- c(
+  "DeviceName",
+  "age",
+  "gender",
+  "height",
+  "weight",
+  "Steps_LE",
+  "Heart_LE",
+  "Calories_LE",
+  "Distance_LE",
+  "EntropyHeartPerDay_LE",
+  "EntropyStepsPerDay_LE",
+  "RestingHeartrate_LE",
+  "CorrelationHeartrateSteps_LE",
+  "NormalizedHeartrate_LE",
+  "Intensity_LE",
+  "SDNormalizedHR_LE",
+  "StepsXDistance_LE"
+  #,"activity_trimmed"
+)
+
+x <- aggregated_data_appended %>% select(x_columns_FB_LE)
+x$gender <- ifelse(x$gender == "Male", 1, 0)
+x$DeviceName <- ifelse(x$DeviceName == "AppleWatch", 1, 0)
+
+
+idx <- which(is.na(x), arr.ind = T)[, 1]
+x <- x[-idx, ]
+
+write.csv(x, "data_for_process.csv")
+
+
+y <- as.factor(aggregated_data_appended$activity_trimmed[-idx])
+
+train = sample(seq(length(y)), 0.7 * length(y))
+test = seq(length(y))[-train]
+
+xTrain = x[train, ]
+yTrain = y[train]
+xTest = x[test, ]
+yTest = y[test]
+
+rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 100)
+
+### Training
+print(confusionMatrix(rfModel[["predicted"]], yTrain))
+
+### Testing
+pred <- predict(rfModel, xTest)
+print(confusionMatrix(pred, yTest))
+```
+
+### SVM
+
+```{r}
+svmModel <- svm(xTrain, yTrain)
+
+### Training
+print(confusionMatrix(svmModel[["fitted"]], yTrain))
+
+### Testing
+pred <- predict(svmModel, xTest)
+print(confusionMatrix(pred, yTest))
+```
+
+
+## Generating AppleWatch and Fitbit data for Rotation Forest model in Weka
 ```{r}
 x_columns_AW_LE <- c(
   "age",
@@ -706,292 +624,9 @@ write.csv(x, "data_for_weka_fb.csv")
 ```
 
 
-##### Fitbit with interpolated data, removing Nas with rfImpute - Random Forest and SVM
-```{r}
-x_columns_FB <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Fitbit.Steps",
-  "Fitbit.Heart",
-  "Fitbit.Calories",
-  "Fitbit.Distance",
-  "EntropyFitbitHeartPerDay",
-  "EntropyFitbitStepsPerDay",
-  "RestingFitbitHeartrate",
-  "CorrelationFitbitHeartrateSteps",
-  "NormalizedFitbitHeartrate",
-  "FitbitIntensity",
-  "SDNormalizedFitbitHR",
-  "FitbitStepsXDistance"
-  ,"activity_trimmed"
-)
+## Non-Interpolated Results (Not included in the paper)
 
-summary_data_before_removing_na <- aggregated_data %>% 
-  summarise(
-    total_row_num = dim(aggregated_data)[1],
-    n_Fitbit.Steps = length(which(!is.na(Fitbit.Steps))),
-    n_Fitbit.Heart = length(which(!is.na(Fitbit.Heart))),
-    n_Fitbit.Calories = length(which(!is.na(Fitbit.Calories))),
-    n_FFitbit.Distance = length(which(!is.na(Fitbit.Distance))),
-    n_EntropyFitbitHeartPerDay = length(which(!is.na(EntropyFitbitHeartPerDay))),
-    n_EntropyFitbitStepsPerDay = length(which(!is.na(EntropyFitbitStepsPerDay))),
-    n_RestingFitbitHeartrate = length(which(!is.na(RestingFitbitHeartrate))),
-    n_CorrelationFitbitHeartrateSteps = length(which(!is.na(CorrelationFitbitHeartrateSteps))),
-    n_NormalizedFitbitHeartrate = length(which(!is.na(NormalizedFitbitHeartrate))),
-    n_FitbitIntensity = length(which(!is.na(FitbitIntensity))),
-    n_SDNormalizedFitbitHR = length(which(!is.na(SDNormalizedFitbitHR))),
-    n_FitbitStepsXDistance = length(which(!is.na(FitbitStepsXDistance)))
-  )
-
-aggregated_data_impute <- aggregated_data %>% select(x_columns_FB)
-aggregated_data_impute$gender <- ifelse(aggregated_data_impute$gender == "Male", 1, 0)
-
-
-#idx <- which(is.na(x), arr.ind = T)[, 1]
-#x <- x[-idx, ]
-
-# write.csv(x, "data_for_process_fb.csv")
-
-aggregated_data_impute$activity_trimmed <- as_factor(aggregated_data_impute$activity_trimmed)
-# removing Nas from the dataset
-aggregated_data_impute <- as.data.frame(aggregated_data_impute)
-aggregated_data_imputed <- rfImpute(activity_trimmed ~ ., aggregated_data_impute)
-
-summary_data_after_removing_na <- aggregated_data_imputed %>% 
-  summarise(
-    total_row_num = dim(aggregated_data_imputed)[1],
-    n_Fitbit.Steps_LE = length(which(!is.na(Fitbit.Steps))),
-    n_Fitbit.Heart_LE = length(which(!is.na(Fitbit.Heart))),
-    n_Fitbit.Calories_LE = length(which(!is.na(Fitbit.Calories))),
-    n_FFitbit.Distance_LE = length(which(!is.na(Fitbit.Distance))),
-    n_EntropyFitbitHeartPerDay_LE = length(which(!is.na(EntropyFitbitHeartPerDay))),
-    n_EntropyFitbitStepsPerDay_LE = length(which(!is.na(EntropyFitbitStepsPerDay))),
-    n_RestingFitbitHeartrate_LE = length(which(!is.na(RestingFitbitHeartrate))),
-    n_CorrelationFitbitHeartrateSteps_LE = length(which(!is.na(CorrelationFitbitHeartrateSteps))),
-    n_NormalizedFitbitHeartrate_LE = length(which(!is.na(NormalizedFitbitHeartrate))),
-    n_FitbitIntensity_LE = length(which(!is.na(FitbitIntensity))),
-    n_SDNormalizedFitbitHR_LE = length(which(!is.na(SDNormalizedFitbitHR))),
-    n_FitbitStepsXDistance_LE = length(which(!is.na(FitbitStepsXDistance)))
-  )
-
-
-#y <- as.factor(aggregated_data$activity_trimmed[-idx])
-y <- as.factor(aggregated_data_imputed$activity_trimmed)
-x <- select(aggregated_data_imputed,-c(1))
-
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-xTrain = x[train, ]
-yTrain = y[train]
-xTest = x[test, ]
-yTest = y[test]
-
-
-
-
-print(
-    "--------------------------------------------Random Forest--------------------------------------------"
-  )
-  rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 500)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(rfModel[["predicted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(rfModel, xTest)
-  print(confusionMatrix(pred, yTest))
-
-  
-  print(
-    "------------------------------------------------SVM--------------------------------------------------"
-  )
-  svmModel <- svm(xTrain, yTrain)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(svmModel[["fitted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(svmModel, xTest)
-  print(confusionMatrix(pred, yTest))
-```
-
-##### Applewatch with interpolated data, imputed - Random Forest and SVM
-```{r}
-x_columns_AW <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Applewatch.Steps",
-  "Applewatch.Heart",
-  "Applewatch.Calories",
-  "Applewatch.Distance",
-  "EntropyApplewatchHeartPerDay",
-  "EntropyApplewatchStepsPerDay",
-  "RestingApplewatchHeartrate",
-  "CorrelationApplewatchHeartrateSteps",
-  "NormalizedApplewatchHeartrate",
-  "ApplewatchIntensity",
-  "SDNormalizedApplewatchHR",
-  "ApplewatchStepsXDistance"
-)
-
-x <- aggregated_data %>% select(x_columns_AW)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-x <- impute(x = x, what = "mean")
-
-
-y <- as.factor(aggregated_data_imputed$activity_trimmed)
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-xTrain = x[train, ]
-yTrain = y[train]
-xTest = x[test, ]
-yTest = y[test]
-
-
-print(
-    "--------------------------------------------Random Forest--------------------------------------------"
-  )
-  rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 100)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(rfModel[["predicted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(rfModel, xTest)
-  print(confusionMatrix(pred, yTest))
-
-  
-  print(
-    "------------------------------------------------SVM--------------------------------------------------"
-  )
-  svmModel <- svm(xTrain, yTrain)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(svmModel[["fitted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(svmModel, xTest)
-  print(confusionMatrix(pred, yTest))
-```
-
-##### Fitbit with non-interpolated data, imputed - Random Forest and SVM
-```{r}
-x_columns_FB <- c(
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Fitbit.Steps",
-  "Fitbit.Heart",
-  "Fitbit.Calories",
-  "Fitbit.Distance",
-  "EntropyFitbitHeartPerDay",
-  "EntropyFitbitStepsPerDay",
-  "RestingFitbitHeartrate",
-  "CorrelationFitbitHeartrateSteps",
-  "NormalizedFitbitHeartrate",
-  "FitbitIntensity",
-  "SDNormalizedFitbitHR",
-  "FitbitStepsXDistance"
-)
-
-summary_data_before_imputation <- aggregated_data %>% 
-  summarise(
-    total_row_num = dim(aggregated_data)[1],
-    n_Fitbit.Steps = length(which(!is.na(Fitbit.Steps))),
-    n_Fitbit.Heart = length(which(!is.na(Fitbit.Heart))),
-    n_Fitbit.Calories = length(which(!is.na(Fitbit.Calories))),
-    n_FFitbit.Distance = length(which(!is.na(Fitbit.Distance))),
-    n_EntropyFitbitHeartPerDay = length(which(!is.na(EntropyFitbitHeartPerDay))),
-    n_EntropyFitbitStepsPerDay = length(which(!is.na(EntropyFitbitStepsPerDay))),
-    n_RestingFitbitHeartrate = length(which(!is.na(RestingFitbitHeartrate))),
-    n_CorrelationFitbitHeartrateSteps = length(which(!is.na(CorrelationFitbitHeartrateSteps))),
-    n_NormalizedFitbitHeartrate = length(which(!is.na(NormalizedFitbitHeartrate))),
-    n_FitbitIntensity = length(which(!is.na(FitbitIntensity))),
-    n_SDNormalizedFitbitHR = length(which(!is.na(SDNormalizedFitbitHR))),
-    n_FitbitStepsXDistance = length(which(!is.na(FitbitStepsXDistance)))
-  )
-
-x <- aggregated_data %>% select(x_columns_FB)
-x$gender <- ifelse(x$gender == "Male", 1, 0)
-x <- as.data.frame(impute(x = x, what = "mean"))
-
-summary_data_after_imputation <- x %>% 
- summarise(
-    total_row_num = dim(x)[1],
-    n_Fitbit.Steps = length(which(!is.na(Fitbit.Steps))),
-    n_Fitbit.Heart = length(which(!is.na(Fitbit.Heart))),
-    n_Fitbit.Calories = length(which(!is.na(Fitbit.Calories))),
-    n_FFitbit.Distance = length(which(!is.na(Fitbit.Distance))),
-    n_EntropyFitbitHeartPerDay = length(which(!is.na(EntropyFitbitHeartPerDay))),
-    n_EntropyFitbitStepsPerDay = length(which(!is.na(EntropyFitbitStepsPerDay))),
-    n_RestingFitbitHeartrate = length(which(!is.na(RestingFitbitHeartrate))),
-    n_CorrelationFitbitHeartrateSteps = length(which(!is.na(CorrelationFitbitHeartrateSteps))),
-    n_NormalizedFitbitHeartrate = length(which(!is.na(NormalizedFitbitHeartrate))),
-    n_FitbitIntensity = length(which(!is.na(FitbitIntensity))),
-    n_SDNormalizedFitbitHR = length(which(!is.na(SDNormalizedFitbitHR))),
-    n_FitbitStepsXDistance = length(which(!is.na(FitbitStepsXDistance)))
-  )
-
-
-y <- as.factor(aggregated_data$activity_trimmed)
-
-train = sample(seq(length(y)), 0.7 * length(y))
-test = seq(length(y))[-train]
-
-xTrain = x[train, ]
-yTrain = y[train]
-xTest = x[test, ]
-yTest = y[test]
-
-print(
-    "--------------------------------------------Random Forest--------------------------------------------"
-  )
-  rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 100)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(rfModel[["predicted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(rfModel, xTest)
-  print(confusionMatrix(pred, yTest))
-
-  
-  print(
-    "------------------------------------------------SVM--------------------------------------------------"
-  )
-  svmModel <- svm(xTrain, yTrain)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(svmModel[["fitted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(svmModel, xTest)
-  print(confusionMatrix(pred, yTest))
-```
-
-
-##### predicting EE by linear regression
+### Applewatch with non-interpolated data - Decision tree
 ```{r}
 x_columns_AW <- c(
   "age",
@@ -1010,103 +645,73 @@ x_columns_AW <- c(
   "ApplewatchIntensity",
   "SDNormalizedApplewatchHR",
   "ApplewatchStepsXDistance",
-  "EE"
+  "activity_trimmed"
 )
 
-
-x <- aggregated_data %>% select(x_columns_AW) %>% 
-  mutate(gender = ifelse(gender == "Male", 1, 0)) %>% 
-  impute(what = "mean") %>% 
-  as.data.frame()
-
-
-train = sample(seq(length(x$EE)), 0.7 * length(x$EE))
-test = seq(length(x$EE))[-train]
-
-xTrain = x[train, ]
-xTest = x[test, ]
-
-reg <- lm(formula = EE ~ ., data = xTrain)
-
-summary(reg)
-
-ee_predict <- predict(reg, newdata = xTest)
-
-```
-
-##### Device name as a feature on Fitbit and AppleWatch interpolated data - Random Forest and SVM
-```{r}
-aggregated_data_appended <- fread(paste0(path, "aggregated_fitbit_applewatch_jaeger_appended.csv"), data.table = F)[ ,-1]
-x_columns_FB_LE <- c(
-  "DeviceName",
-  "age",
-  "gender",
-  "height",
-  "weight",
-  "Steps_LE",
-  "Heart_LE",
-  "Calories_LE",
-  "Distance_LE",
-  "EntropyHeartPerDay_LE",
-  "EntropyStepsPerDay_LE",
-  "RestingHeartrate_LE",
-  "CorrelationHeartrateSteps_LE",
-  "NormalizedHeartrate_LE",
-  "Intensity_LE",
-  "SDNormalizedHR_LE",
-  "StepsXDistance_LE"
-  #,"activity_trimmed"
-)
-
-x <- aggregated_data_appended %>% select(x_columns_FB_LE)
+x <- aggregated_data %>% select(x_columns_AW)
 x$gender <- ifelse(x$gender == "Male", 1, 0)
-x$DeviceName <- ifelse(x$DeviceName == "AppleWatch", 1, 0)
 
-
-idx <- which(is.na(x), arr.ind = T)[, 1]
-x <- x[-idx, ]
-
-write.csv(x, "data_for_process.csv")
-
-
-y <- as.factor(aggregated_data_appended$activity_trimmed[-idx])
+y <- aggregated_data$activity_trimmed
 
 train = sample(seq(length(y)), 0.7 * length(y))
 test = seq(length(y))[-train]
 
-xTrain = x[train, ]
-yTrain = y[train]
-xTest = x[test, ]
-yTest = y[test]
+train = x[train,]
+train$activity_trimmed <- as.factor(train$activity_trimmed)
+
+test = x[test,]
+test$activity_trimmed <- as.factor(test$activity_trimmed)
 
 
-print(
-    "--------------------------------------------Random Forest--------------------------------------------"
-  )
-  rfModel <- randomForest(x = xTrain, y = yTrain, ntree = 500)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(rfModel[["predicted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(rfModel, xTest)
-  print(confusionMatrix(pred, yTest))
+dtModel <- rpart(activity_trimmed ~ ., train)
+predict_unseen_aw <- predict(dtModel, test, type = 'class')
 
-  
-  print(
-    "------------------------------------------------SVM--------------------------------------------------"
-  )
-  svmModel <- svm(xTrain, yTrain)
-  print(
-    "________________________________________________Train________________________________________________"
-  )
-  print(confusionMatrix(svmModel[["fitted"]], yTrain))
-  print(
-    "________________________________________________Test_________________________________________________"
-  )
-  pred <- predict(svmModel, xTest)
-  print(confusionMatrix(pred, yTest))
+print(confusionMatrix(predict_unseen_aw, test$activity_trimmed))
 ```
+
+
+##### Fitbit with non-interpolated data - Decision tree
+```{r}
+x_columns_FB <- c(
+  "age",
+  "gender",
+  "height",
+  "weight",
+  "Fitbit.Steps",
+  "Fitbit.Heart",
+  "Fitbit.Calories",
+  "Fitbit.Distance",
+  "EntropyFitbitHeartPerDay",
+  "EntropyFitbitStepsPerDay",
+  "RestingFitbitHeartrate",
+  "CorrelationFitbitHeartrateSteps",
+  "NormalizedFitbitHeartrate",
+  "FitbitIntensity",
+  "SDNormalizedFitbitHR",
+  "FitbitStepsXDistance",
+  "activity_trimmed"
+)
+
+x <- aggregated_data %>% select(x_columns_FB)
+x$gender <- ifelse(x$gender == "Male", 1, 0)
+
+y <- aggregated_data$activity_trimmed
+
+train = sample(seq(length(y)), 0.7 * length(y))
+test = seq(length(y))[-train]
+
+train = x[train,]
+train$activity_trimmed <- as.factor(train$activity_trimmed)
+
+test = x[test,]
+test$activity_trimmed <- as.factor(test$activity_trimmed)
+
+
+dtModel <- rpart(activity_trimmed ~ ., train)
+predict_unseen_fb <- predict(dtModel, test, type = 'class')
+
+print(confusionMatrix(predict_unseen_fb, test$activity_trimmed))
+  
+```
+
 
