@@ -46,4 +46,4 @@ This study demonstrated that commercial wearable devices, Apple Watch and Fitbit
 3. Rotation Forest Model with combined Fitbit and Apple Watch data: [https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/AppleWatch_Fitbit_RotationForestModel.model](https://github.com/walkabillylab/fitbit_apple_watch_classification/blob/master/AppleWatch_Fitbit_RotationForestModel.model)
 
 ## Data
-To be published soon. 
+[https://doi.org/10.7910/DVN/ZS2Z2J](https://doi.org/10.7910/DVN/ZS2Z2J)
